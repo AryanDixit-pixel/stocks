@@ -1,0 +1,54 @@
+import xlrd
+from scipy.optimize import Bounds
+from scipy.optimize import LinearConstraint
+from scipy.optimize import minimize
+import numpy as np
+
+#Reading from the workbook
+location = ("MCP261 Ex 4 data.xls")
+workbook = xlrd.open_workbook(location);
+sheet = workbook.sheet_by_index(0);
+
+
+#Finding and storing mean returns for each stock
+num_cols = sheet.ncols;
+num_rows = sheet.nrows-1;
+u = [0]*num_cols;
+temp = 0;
+for j in range(num_cols):
+	for i in range(1,num_rows+1):
+		temp = temp + float(sheet.cell_value(i,j));
+	u[j] = temp/num_rows;
+	temp=0;
+
+
+#Find the covariance matrix
+p = 0;
+f=0;
+cov = [[0]*num_cols]*num_cols;
+for i in range(num_cols):
+	for j in range(1):
+		for k in range(1,num_rows+1):
+			sum = (sheet.cell_value(k,i)-u[i])*(sheet.cell_value(k,j)-u[j]);
+		cov[i][j] = sum/(num_rows-1);
+		cov[j][i]=cov[i][j];
+		p = p+1;
+
+
+#Defining initial values
+gamma = 0.1;
+x0 = [0.1,0.2,0.3,0.35,0.5]
+
+
+def objective_func(x):
+	return -(np.dot(np.transpose(x),u) - gamma*(np.dot(np.transpose(x),np.dot(cov,x))))
+
+bounds = Bounds([0,0,0,0,0],[1,1,1,1,1])
+linear_constraint = LinearConstraint([[1,1,1,1,1]],[1],[1])
+
+res = minimize(objective_func, x0, method='trust-constr', constraints=[linear_constraint], options={'verbose':1}, bounds=bounds)
+l=res.x
+s=0
+for i in range(5):
+	s = s + l[i]*u[i];
+print(s)
