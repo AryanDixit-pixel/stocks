@@ -1,0 +1,53 @@
+import numpy as np
+import xlrd
+
+#Reading from the workbook
+location = ("MCP261 Ex 4 data.xls")
+workbook = xlrd.open_workbook(location);
+sheet = workbook.sheet_by_index(0);
+
+#Finding and storing mean returns for each stock
+num_cols = sheet.ncols;
+num_rows = sheet.nrows-1;
+u = [0]*num_cols;
+temp = 0;
+for j in range(num_cols):
+	for i in range(1,num_rows+1):
+		temp = temp + float(sheet.cell_value(i,j));
+	u[j] = temp/num_rows;
+	temp=0;
+
+
+
+#To create w matrix
+np.random.seed(1234)
+w = [0]*num_cols;
+def ws():
+	k = 1;
+	for i in range(num_cols-1):
+		a = np.random.rand()*k;
+		w[i] = a;
+		k = k-a;
+	w[num_cols-1] = k;
+	return w;
+
+
+#Solving the equation
+#Find the covariance matrix
+p = 0;
+f=0;
+cov = [[0]*num_cols]*num_cols;
+for i in range(num_cols):
+	for j in range(1):
+		for k in range(1,num_rows+1):
+			sum = (sheet.cell_value(k,i)-u[i])*(sheet.cell_value(k,j)-u[j]);
+		cov[i][j] = sum/(num_rows-1);
+		cov[j][i]=cov[i][j];
+		p = p+1;
+
+gamma = 0.1;
+
+answers=[0]*500000;
+for i in range(500000):
+	answers[i] = np.dot(np.transpose(ws()),u) - gamma*(np.dot(np.transpose(ws()),np.dot(cov,ws())));
+print(max(answers))
